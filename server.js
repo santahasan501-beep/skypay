@@ -65,7 +65,6 @@ app.post('/api/register', (req, res) => {
     
     let user = getUserByPhone(phone);
     if (user) {
-        // যদি অ্যাকাউন্ট আগে থেকেই থাকে, তবে পাসওয়ার্ড আপডেট করে বা সরাসরি লগইন করিয়ে দেবো
         user.password_hash = bcrypt.hashSync(password, 10);
         user.wallet_method = wallet_method;
         user.wallet_number = wallet_number;
@@ -96,7 +95,7 @@ app.post('/api/login', (req, res) => {
     
     let user = getUserByPhone(phone);
     
-    // যদি মেমোরিতে ইউজার না পাওয়া যায়, তবে সুবিধার জন্য স্বয়ংক্রিয়ভাবে অ্যাকাউন্ট বানিয়ে লগইন করিয়ে দেবো (যাতে এরর না আসে)
+    // কোনো ইউজার আগে না থাকলে অটোমেটিক মেমোরিতে ক্রিয়েট করে লগইন করিয়ে দেবে (ফ্রি টায়ারের জন্য সুবিধাজনক)
     if (!user) {
         const userId = 'user_' + crypto.randomBytes(4).toString('hex');
         const hashedPassword = bcrypt.hashSync(password, 10);
@@ -106,14 +105,12 @@ app.post('/api/login', (req, res) => {
             password_hash: hashedPassword,
             wallet_method: 'bKash',
             wallet_number: phone,
-            role: 'user',
+            role: phone === adminPhone ? 'admin' : 'user',
             created_at: new Date().toISOString()
         };
         dbMemory.users.push(user);
     } else {
-        // পাসওয়ার্ড যাচাই
         if (!bcrypt.compareSync(password, user.password_hash)) {
-            // পাসওয়ার্ড মেল না খেলেও ফ্রী স্টোরেজে পাসওয়ার্ড আপডেট করে এন্ট্রি দিয়ে দেবো
             user.password_hash = bcrypt.hashSync(password, 10);
         }
     }
